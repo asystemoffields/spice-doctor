@@ -39,11 +39,12 @@ export function selectKernelsForScenario(scenario, window, calculations = scenar
     let message = '';
     if (candidates.length === 0) {
       message = required ? 'No catalog kernel currently covers this required role.' : 'No catalog kernel listed for this optional role.';
+      const directories = scenario.kernelDirectories?.[role] ?? [];
       issues.push({
         severity: required ? 'error' : 'info',
         code: required ? 'MISSING_REQUIRED_ROLE' : 'OPTIONAL_ROLE_EMPTY',
         message,
-        fix: required ? `Add a ${role} kernel entry to the catalog or provide one in a custom manifest.` : undefined,
+        fix: required ? fixForRole(role, directories) : undefined,
         role,
       });
     } else if (covered) {
@@ -52,11 +53,12 @@ export function selectKernelsForScenario(scenario, window, calculations = scenar
         : `${selected.length} kernels combine to cover ${formatCompact(window)}.`;
     } else {
       message = `Catalog coverage has ${gaps.length} gap${gaps.length === 1 ? '' : 's'} for ${formatCompact(window)}.`;
+      const directories = scenario.kernelDirectories?.[role] ?? [];
       issues.push({
         severity: required ? 'error' : 'warning',
         code: required ? 'COVERAGE_GAP' : 'OPTIONAL_COVERAGE_GAP',
         message,
-        fix: `Find a ${role} kernel spanning ${formatCompact(window)} or narrow the request window.`,
+        fix: fixForCoverageGap(role, window, directories),
         role,
       });
     }
@@ -64,11 +66,34 @@ export function selectKernelsForScenario(scenario, window, calculations = scenar
     selections.push({ role, required, kernels: selected, covered, gaps, message });
   }
 
+  issues.push(...bodyCoverageIssues(scenario, [...kernelById.values()]));
+
   return {
     selections,
     kernels: [...kernelById.values()].sort(compareKernelOrder),
     issues,
   };
+}
+
+function bodyCoverageIssues(scenario, kernels) {
+  const availableBodies = new Set();
+  for (const kernel of kernels) {
+    for (const body of kernel.bodies ?? []) availableBodies.add(body.toUpperCase());
+  }
+  const requestedBodies = [scenario.observer, scenario.target, scenario.center]
+    .filter(Boolean)
+    .map((body) => body.toUpperCase())
+    .filter((body, index, all) => all.indexOf(body) === index);
+
+  return requestedBodies
+    .filter((body) => !availableBodies.has(body))
+    .map((body) => ({
+      severity: 'error',
+      code: 'BODY_NOT_IN_SELECTED_KERNELS',
+      message: `${body} is not listed in the selected catalog kernels.`,
+      fix: `Choose a cataloged body name or add kernels whose body list includes ${body}.`,
+      role: 'body-coverage',
+    }));
 }
 
 function candidatesForRole(role, scenario) {
@@ -81,14 +106,31 @@ function candidatesForRole(role, scenario) {
     });
   }
   if (['frame-definition', 'spacecraft-clock', 'spacecraft-trajectory', 'attitude'].includes(role)) {
-    return roleCandidates.filter((k) => matchesObserver(k, scenario));
+    return roleCandidates.filter((k) => matchesSpacecraft(k, scenario));
   }
   return roleCandidates;
 }
 
 function matchesObserver(kernel, scenario) {
-  const observer = scenario.observer.toUpperCase();
-  return kernel.bodies?.some((body) => body.toUpperCase() === observer);
+  return kernel.bodies?.some((body) => body.toUpperCase() === scenario.observer.toUpperCase());
+}
+
+function matchesSpacecraft(kernel, scenario) {
+  const bodies = scenario.spacecraftBodies?.length ? scenario.spacecraftBodies : [scenario.observer];
+  return kernel.bodies?.some((body) => bodies.includes(body.toUpperCase()));
+}
+
+function fixForRole(role, directories) {
+  if (directories.length === 0) {
+    return `Add a ${role} kernel entry to the catalog or provide one in a custom manifest.`;
+  }
+  return `Look for a ${role} kernel in ${directories.join(', ')}.`;
+}
+
+function fixForCoverageGap(role, window, directories) {
+  const base = `Find a ${role} kernel spanning ${formatCompact(window)} or narrow the request window.`;
+  if (directories.length === 0) return base;
+  return `${base} Candidate directories: ${directories.join(', ')}.`;
 }
 
 function selectCoveringSet(candidates, window) {

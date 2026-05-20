@@ -1,6 +1,6 @@
 import { SCENARIOS } from '../core/catalog.js';
 import { generateDownloadList } from '../core/manifest.js';
-import { buildManifestReport } from '../core/report.js';
+import { buildQuestionReport } from '../core/report.js';
 
 const CALCULATION_LABELS = {
   'state-vector': 'State vector',
@@ -26,9 +26,27 @@ root.innerHTML = `
         </div>
       </div>
       <label>
-        Scenario
-        <select id="scenario"></select>
+        Start from
+        <select id="preset"></select>
       </label>
+      <div class="question-grid">
+        <label>
+          Observer
+          <input id="observer" type="text" spellcheck="false" />
+        </label>
+        <label>
+          Target
+          <input id="target" type="text" spellcheck="false" />
+        </label>
+        <label>
+          Center
+          <input id="center" type="text" spellcheck="false" />
+        </label>
+        <label>
+          Instrument
+          <input id="instrument" type="text" spellcheck="false" />
+        </label>
+      </div>
       <div class="time-grid">
         <label>
           From UTC
@@ -67,6 +85,10 @@ root.innerHTML = `
           <span class="label">catalog size</span>
         </div>
       </section>
+      <section class="panel answer-panel">
+        <h3>Answer</h3>
+        <p id="answer"></p>
+      </section>
       <section class="panel">
         <h3>Coverage</h3>
         <div id="coverage"></div>
@@ -101,8 +123,12 @@ root.innerHTML = `
   </section>
 `;
 
-const scenarioSelect = byId('scenario');
+const presetSelect = byId('preset');
 const calculationsEl = byId('calculations');
+const observerInput = byId('observer');
+const targetInput = byId('target');
+const centerInput = byId('center');
+const instrumentInput = byId('instrument');
 const fromInput = byId('from');
 const toInput = byId('to');
 const runButton = byId('run');
@@ -111,6 +137,7 @@ const statusPill = byId('status-pill');
 const kernelCount = byId('kernel-count');
 const issueCount = byId('issue-count');
 const downloadSize = byId('download-size');
+const answerEl = byId('answer');
 const coverageEl = byId('coverage');
 const kernelsEl = byId('kernels');
 const diagnosticsEl = byId('diagnostics');
@@ -122,24 +149,36 @@ const pyodideOutput = byId('pyodide-output');
 let currentReport;
 let activeTab = 'metakernel';
 
+const customOption = document.createElement('option');
+customOption.value = 'custom';
+customOption.textContent = 'Custom question';
+presetSelect.appendChild(customOption);
+
 for (const scenario of SCENARIOS) {
   const option = document.createElement('option');
   option.value = scenario.id;
   option.textContent = scenario.name;
-  scenarioSelect.appendChild(option);
+  presetSelect.appendChild(option);
 }
 
-scenarioSelect.value = 'juno-jupiter';
-setInputsFromScenario();
+presetSelect.value = 'juno-jupiter';
+setInputsFromPreset();
 renderCalculationControls();
 render();
 
-scenarioSelect.addEventListener('change', () => {
-  setInputsFromScenario();
+presetSelect.addEventListener('change', () => {
+  setInputsFromPreset();
   renderCalculationControls();
   render();
 });
 runButton.addEventListener('click', render);
+for (const input of [observerInput, targetInput, centerInput, instrumentInput, fromInput, toInput]) {
+  input.addEventListener('change', () => {
+    if (input !== fromInput && input !== toInput) presetSelect.value = 'custom';
+    renderCalculationControls();
+    render();
+  });
+}
 
 for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => {
@@ -171,9 +210,14 @@ pyodideProbe.addEventListener('click', async () => {
 });
 
 function render() {
-  const scenario = SCENARIOS.find((s) => s.id === scenarioSelect.value);
-  currentReport = buildManifestReport({
-    scenarioId: scenario.id,
+  currentReport = buildQuestionReport({
+    presetScenarioId: presetSelect.value === 'custom' ? undefined : presetSelect.value,
+    observer: observerInput.value,
+    target: targetInput.value,
+    center: centerInput.value,
+    instrument: instrumentInput.value,
+    frame: 'J2000',
+    abcorr: 'LT+S',
     window: {
       start: localToIso(fromInput.value),
       stop: localToIso(toInput.value),
@@ -188,6 +232,7 @@ function render() {
   issueCount.textContent = String(currentReport.issues.length);
   const mb = currentReport.kernels.reduce((sum, kernel) => sum + (kernel.sizeMb ?? 0), 0);
   downloadSize.textContent = mb > 0 ? `${Math.round(mb)} MB` : 'cataloged';
+  answerEl.textContent = currentReport.answer;
 
   renderCoverage(currentReport.selections);
   renderKernels();
@@ -257,16 +302,22 @@ function renderCode() {
   else codeEl.textContent = currentReport.metaKernel;
 }
 
-function setInputsFromScenario() {
-  const scenario = SCENARIOS.find((s) => s.id === scenarioSelect.value);
+function setInputsFromPreset() {
+  const scenario = SCENARIOS.find((s) => s.id === presetSelect.value) ?? SCENARIOS.find((s) => s.id === 'earth-moon-sun');
+  observerInput.value = scenario.observer;
+  targetInput.value = scenario.target;
+  centerInput.value = scenario.center;
+  instrumentInput.value = scenario.instrument?.id ?? '';
   fromInput.value = isoToLocal(scenario.sampleWindow.start);
   toInput.value = isoToLocal(scenario.sampleWindow.stop);
 }
 
 function renderCalculationControls() {
-  const scenario = SCENARIOS.find((s) => s.id === scenarioSelect.value);
-  const calculations = [...scenario.calculations];
-  if (scenario.attitudeFrame && !calculations.includes('attitude-matrix')) {
+  const scenario = SCENARIOS.find((s) => s.id === presetSelect.value);
+  const baseCalculations = scenario?.calculations ?? ['state-vector', 'range-rate', 'phase-angle', 'sub-observer-point', 'sub-solar-point'];
+  const calculations = [...baseCalculations];
+  if (!calculations.includes('instrument-fov')) calculations.push('instrument-fov');
+  if (!calculations.includes('attitude-matrix')) {
     calculations.push('attitude-matrix');
   }
 
@@ -277,7 +328,7 @@ function renderCalculationControls() {
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.value = calculation;
-    input.checked = scenario.calculations.includes(calculation);
+    input.checked = baseCalculations.includes(calculation);
     input.addEventListener('change', render);
     label.append(input, document.createTextNode(CALCULATION_LABELS[calculation] ?? labelRole(calculation)));
     calculationsEl.append(label);

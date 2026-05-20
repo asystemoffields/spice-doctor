@@ -118,6 +118,11 @@ input {
   gap: 12px;
 }
 
+.question-grid {
+  display: grid;
+  gap: 12px;
+}
+
 .check {
   grid-template-columns: 18px 1fr;
   align-items: center;
@@ -231,6 +236,11 @@ h2 {
 .panel h3 {
   font-size: 15px;
   margin-bottom: 14px;
+}
+
+.answer-panel p {
+  color: #243241;
+  font-size: 15px;
 }
 
 .split {

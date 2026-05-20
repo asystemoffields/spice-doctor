@@ -2,7 +2,7 @@
 
 SPICE kernel manifest, coverage, and reproducibility workbench for planetary geometry workflows.
 
-`spice-doctor` starts from a mission scenario, a target, an observer, and a UTC range. It selects NAIF kernels from a curated catalog, checks coverage, emits a meta-kernel, and generates a runnable SpiceyPy recipe for common geometry products.
+`spice-doctor` starts from a geometry question: observer, target, center, UTC range, and products to compute. It selects NAIF kernels from a curated catalog, checks coverage, emits a meta-kernel, and generates a runnable SpiceyPy recipe for common geometry products.
 
 ![SPICE Doctor workbench](docs/spice-doctor-handoff.png)
 
@@ -10,7 +10,7 @@ SPICE kernel manifest, coverage, and reproducibility workbench for planetary geo
 
 - Zero-dependency JavaScript core library for scenario reports.
 - CLI for manifest resolution and reproducible recipe generation.
-- Local web app for coverage inspection and handoff reports.
+- Question-first web app for coverage inspection and handoff reports.
 - Curated scenarios for Earth-Moon-Sun, Juno-Jupiter, MRO-Mars, and Cassini-Enceladus 2012.
 - Real SPK coverage audit workflow through SpiceyPy.
 - Live geometry smoke test for state vectors, range rate, phase angle, sub-points, and instrument FOVs.
@@ -20,6 +20,29 @@ SPICE kernel manifest, coverage, and reproducibility workbench for planetary geo
 - GitHub Pages and release artifact workflows.
 
 ## Use
+
+Answer a custom question from code:
+
+```js
+import { buildQuestionReport } from 'spice-doctor';
+
+const report = buildQuestionReport({
+  observer: 'JUNO',
+  target: 'JUPITER',
+  center: 'JUPITER',
+  instrument: 'JUNO_JUNOCAM_RED',
+  window: {
+    start: '2026-03-10T00:00:00Z',
+    stop: '2026-03-11T00:00:00Z',
+  },
+  calculations: ['state-vector', 'phase-angle', 'instrument-fov'],
+});
+
+console.log(report.answer);
+console.log(report.kernels.map((kernel) => kernel.localPath));
+```
+
+Run a bundled scenario from the CLI:
 
 ```bash
 node src/cli.js --scenario juno-jupiter \

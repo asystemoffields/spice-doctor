@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SCENARIOS } from '../src/core/catalog.js';
-import { buildManifestReport } from '../src/core/report.js';
+import { buildManifestReport, buildQuestionReport } from '../src/core/report.js';
 
 test('ships named scenarios', () => {
   const ids = SCENARIOS.map((s) => s.id);
@@ -33,6 +33,48 @@ test('keeps optional instrument kernels out of state-vector-only reports', () =>
   assert.equal(report.status, 'ready');
   assert.equal(report.kernels.some((k) => k.type === 'IK'), false);
   assert.equal(report.kernels.some((k) => k.type === 'FK'), false);
+});
+
+test('answers a custom Juno geometry question', () => {
+  const report = buildQuestionReport({
+    observer: 'JUNO',
+    target: 'JUPITER',
+    center: 'JUPITER',
+    instrument: 'JUNO_JUNOCAM_RED',
+    window: { start: '2026-03-10T00:00:00Z', stop: '2026-03-11T00:00:00Z' },
+    calculations: ['state-vector', 'phase-angle', 'instrument-fov'],
+  });
+
+  assert.equal(report.status, 'ready');
+  assert.match(report.answer, /^Ready:/);
+  assert.ok(report.kernels.map((k) => k.id).includes('juno-spk-rec-orbit'));
+  assert.ok(report.kernels.map((k) => k.id).includes('juno-ik-junocam-v03'));
+});
+
+test('answers a generic Earth Moon question without spacecraft kernels', () => {
+  const report = buildQuestionReport({
+    observer: 'EARTH',
+    target: 'MOON',
+    center: 'EARTH',
+    window: { start: '2026-05-20T00:00:00Z', stop: '2026-05-21T00:00:00Z' },
+    calculations: ['state-vector', 'phase-angle'],
+  });
+
+  assert.equal(report.status, 'ready');
+  assert.equal(report.kernels.some((k) => k.role === 'spacecraft-trajectory'), false);
+});
+
+test('blocks custom questions for bodies absent from selected kernels', () => {
+  const report = buildQuestionReport({
+    observer: 'EARTH',
+    target: 'CERES',
+    center: 'SUN',
+    window: { start: '2026-05-20T00:00:00Z', stop: '2026-05-21T00:00:00Z' },
+    calculations: ['state-vector'],
+  });
+
+  assert.equal(report.status, 'blocked');
+  assert.equal(report.issues.some((i) => i.code === 'BODY_NOT_IN_SELECTED_KERNELS' && i.message.includes('CERES')), true);
 });
 
 test('combines Juno reconstructed and predicted trajectory kernels across the handoff', () => {
