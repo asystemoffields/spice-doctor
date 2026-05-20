@@ -117,14 +117,6 @@ SPICE geometry work often starts with a deceptively practical question: which ke
 - WebGeocalc: https://naif.jpl.nasa.gov/naif/webgeocalc.html
 - SpiceyPy: https://github.com/AndrewAnnex/SpiceyPy
 
-## Next scientific steps
-
-1. Add WebGeocalc parity fixtures for the bundled scenarios.
-2. Add a NAIF index scraper that proposes catalog updates from live mission directories.
-3. Extend scenario support to frames, spacecraft clocks, instrument kernels, CK attitude, and FOV computations.
-4. Package the browser sandbox with SpiceyPy Pyodide for client-side geometry execution.
-5. Add a publish workflow for the static workbench and release artifacts.
-
 ## License
 
 MIT
