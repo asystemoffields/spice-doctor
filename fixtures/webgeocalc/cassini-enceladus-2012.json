@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "webgeocalc-parity-fixture",
+  "generatedAt": "2026-05-20T15:47:02.293431Z",
+  "source": "SpiceyPy/CSPICE local smoke run",
+  "scenario": "cassini-enceladus-2012",
+  "observer": "CASSINI",
+  "target": "ENCELADUS",
+  "window": {
+    "start": "2012-10-19T08:00:00Z",
+    "stop": "2012-10-19T10:00:00Z"
+  },
+  "sampleUtc": "2012-10-19T09:00:00Z",
+  "kernels": [
+    {
+      "id": "generic-lsk-naif0012",
+      "localPath": "generic/lsk/naif0012.tls",
+      "bytes": 5257
+    },
+    {
+      "id": "generic-pck-pck00011",
+      "localPath": "generic/pck/pck00011.tpc",
+      "bytes": 131226
+    },
+    {
+      "id": "cassini-fk-v43",
+      "localPath": "cassini/fk/cas_v43.tf",
+      "bytes": 196583
+    },
+    {
+      "id": "cassini-ik-iss-v10",
+      "localPath": "cassini/ik/cas_iss_v10.ti",
+      "bytes": 31060
+    },
+    {
+      "id": "cassini-spk-2012-enceladus",
+      "localPath": "cassini/spk/200128RU_SCPSE_12280_12328.bsp",
+      "bytes": 13441024
+    },
+    {
+      "id": "generic-spk-de442s",
+      "localPath": "generic/spk/planets/de442s.bsp",
+      "bytes": 32701440
+    },
+    {
+      "id": "generic-spk-sat441",
+      "localPath": "generic/spk/satellites/sat441.bsp",
+      "bytes": 661592064
+    }
+  ],
+  "expected": {
+    "utc": "2012-10-19T09:00:00Z",
+    "rangeKm": 971910.4452599724,
+    "rangeRateKmS": 1.4731742757903565,
+    "lightTimeS": 3.2419442828677583,
+    "phaseAngleDeg": 1.2661653221671096,
+    "subObserver": {
+      "latDeg": 14.986404176657134,
+      "lonDeg": -23.435255259261364,
+      "radiusKm": 255.23631115528616,
+      "surfaceVectorKm": 971655.2623617707,
+      "targetEpochEt": 403909263.9413003
+    },
+    "subSolar": {
+      "latDeg": 15.348614942592501,
+      "lonDeg": -24.661290637583374,
+      "radiusKm": 255.13348176708237,
+      "surfaceVectorKm": 971655.3231181436,
+      "targetEpochEt": 403909263.9413001
+    },
+    "instrumentFov": {
+      "instrument": "CASSINI_ISS_NAC",
+      "instrumentCode": -82360,
+      "shape": "RECTANGLE",
+      "frame": "CASSINI_ISS_NAC",
+      "boresight": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "boundaryVectors": [
+        [
+          0.0030543071954720856,
+          0.0030543071954720856,
+          0.999990671164042
+        ],
+        [
+          -0.0030543071954720856,
+          0.0030543071954720856,
+          0.999990671164042
+        ],
+        [
+          -0.0030543071954720856,
+          -0.0030543071954720856,
+          0.999990671164042
+        ],
+        [
+          0.0030543071954720856,
+          -0.0030543071954720856,
+          0.999990671164042
+        ]
+      ]
+    }
+  },
+  "tolerances": {
+    "rangeKm": 0.001,
+    "rangeRateKmS": 1e-09,
+    "phaseAngleDeg": 1e-09,
+    "latLonDeg": 1e-09,
+    "unitVector": 1e-09
+  }
+}

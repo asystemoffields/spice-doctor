@@ -124,6 +124,10 @@ input {
   color: #edf3f9;
 }
 
+.check + .check {
+  margin-top: 8px;
+}
+
 .check input {
   width: 16px;
   height: 16px;
@@ -382,6 +386,28 @@ pre {
   color: #d8e2ed;
   font-size: 12px;
   line-height: 1.55;
+}
+
+.compact-pre {
+  margin-top: 12px;
+  min-height: 96px;
+  max-height: 220px;
+}
+
+.compact-pre:empty {
+  display: none;
+}
+
+.browser-runner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.runner-status {
+  color: #40505f;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 @media (max-width: 900px) {

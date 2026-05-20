@@ -17,8 +17,22 @@ test('resolves a ready Juno manifest for reconstructed coverage', () => {
 
   assert.equal(report.status, 'ready');
   assert.equal(report.kernels.some((k) => k.id === 'juno-spk-rec-orbit'), true);
+  assert.equal(report.kernels.some((k) => k.id === 'juno-ik-junocam-v03'), true);
   assert.match(report.metaKernel, /juno\/spk\/juno_rec_orbit\.bsp/);
   assert.match(report.spiceypyRecipe, /spice\.spkezr/);
+  assert.match(report.spiceypyRecipe, /spice\.getfov/);
+});
+
+test('keeps optional instrument kernels out of state-vector-only reports', () => {
+  const report = buildManifestReport({
+    scenarioId: 'juno-jupiter',
+    window: { start: '2026-03-10T00:00:00Z', stop: '2026-03-11T00:00:00Z' },
+    calculations: ['state-vector'],
+  });
+
+  assert.equal(report.status, 'ready');
+  assert.equal(report.kernels.some((k) => k.type === 'IK'), false);
+  assert.equal(report.kernels.some((k) => k.type === 'FK'), false);
 });
 
 test('combines Juno reconstructed and predicted trajectory kernels across the handoff', () => {
@@ -40,6 +54,7 @@ test('resolves a ready MRO manifest on the merged current arc', () => {
 
   assert.equal(report.status, 'ready');
   assert.ok(report.kernels.map((k) => k.id).includes('mro-spk-psp'));
+  assert.ok(report.kernels.map((k) => k.id).includes('mro-ik-hirise-v12'));
 });
 
 test('blocks MRO requests after the current merged orbit coverage', () => {

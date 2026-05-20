@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "webgeocalc-parity-fixture",
+  "generatedAt": "2026-05-20T15:47:01.525981Z",
+  "source": "SpiceyPy/CSPICE local smoke run",
+  "scenario": "juno-jupiter",
+  "observer": "JUNO",
+  "target": "JUPITER",
+  "window": {
+    "start": "2026-03-10T00:00:00Z",
+    "stop": "2026-03-11T00:00:00Z"
+  },
+  "sampleUtc": "2026-03-10T12:00:00Z",
+  "kernels": [
+    {
+      "id": "generic-lsk-naif0012",
+      "localPath": "generic/lsk/naif0012.tls",
+      "bytes": 5257
+    },
+    {
+      "id": "generic-pck-pck00011",
+      "localPath": "generic/pck/pck00011.tpc",
+      "bytes": 131226
+    },
+    {
+      "id": "juno-fk-v12",
+      "localPath": "juno/fk/juno_v12.tf",
+      "bytes": 153074
+    },
+    {
+      "id": "juno-ik-junocam-v03",
+      "localPath": "juno/ik/juno_junocam_v03.ti",
+      "bytes": 17535
+    },
+    {
+      "id": "generic-spk-de442s",
+      "localPath": "generic/spk/planets/de442s.bsp",
+      "bytes": 32701440
+    },
+    {
+      "id": "juno-spk-rec-orbit",
+      "localPath": "juno/spk/juno_rec_orbit.bsp",
+      "bytes": 140588032
+    },
+    {
+      "id": "generic-spk-jup388s",
+      "localPath": "juno/spk/jup388s.bsp",
+      "bytes": 36034560
+    }
+  ],
+  "expected": {
+    "utc": "2026-03-10T12:00:00Z",
+    "rangeKm": 5662935.006756255,
+    "rangeRateKmS": 1.021816120015815,
+    "lightTimeS": 18.889517916945916,
+    "phaseAngleDeg": 72.62415806438933,
+    "subObserver": {
+      "latDeg": -67.36972544800294,
+      "lonDeg": 155.9306175759842,
+      "radiusKm": 67484.11271457856,
+      "surfaceVectorKm": 5595520.194342164,
+      "targetEpochEt": 826416050.5208634
+    },
+    "subSolar": {
+      "latDeg": 1.0488554895036073,
+      "lonDeg": 134.08731254248886,
+      "radiusKm": 71490.28054080525,
+      "surfaceVectorKm": 5641819.177995633,
+      "targetEpochEt": 826416050.3664266
+    },
+    "instrumentFov": {
+      "instrument": "JUNO_JUNOCAM_RED",
+      "instrumentCode": -61503,
+      "shape": "RECTANGLE",
+      "frame": "JUNO_JUNOCAM",
+      "boresight": [
+        0.00857099,
+        0.14442688,
+        0.98947835
+      ],
+      "boundaryVectors": [
+        [
+          -0.47949606,
+          0.09218676,
+          0.87268845
+        ],
+        [
+          -0.47518685,
+          0.16768048,
+          0.86375964
+        ],
+        [
+          0.48724863,
+          0.16654879,
+          0.85723408
+        ],
+        [
+          0.4916633,
+          0.09156385,
+          0.865958
+        ]
+      ]
+    }
+  },
+  "tolerances": {
+    "rangeKm": 0.001,
+    "rangeRateKmS": 1e-09,
+    "phaseAngleDeg": 1e-09,
+    "latLonDeg": 1e-09,
+    "unitVector": 1e-09
+  }
+}

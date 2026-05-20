@@ -13,7 +13,11 @@ SPICE kernel manifest, coverage, and reproducibility workbench for planetary geo
 - Local web app for coverage inspection and handoff reports.
 - Curated scenarios for Earth-Moon-Sun, Juno-Jupiter, MRO-Mars, and Cassini-Enceladus 2012.
 - Real SPK coverage audit workflow through SpiceyPy.
-- Live geometry smoke test for state vectors, range rate, phase angle, and sub-points.
+- Live geometry smoke test for state vectors, range rate, phase angle, sub-points, and instrument FOVs.
+- NAIF directory scraper for catalog update proposals.
+- WebGeocalc-style parity fixtures for the bundled scenarios.
+- Browser Pyodide probe for client-side SpiceyPy availability.
+- GitHub Pages and release artifact workflows.
 
 ## Use
 
@@ -83,6 +87,30 @@ Run a live SpiceyPy geometry smoke test after the SPK audit has cached the kerne
 
 The smoke test resolves the scenario through the CLI, loads the selected kernels with CSPICE, and computes a state vector, range rate, phase angle, sub-observer point, and sub-solar point at the midpoint of the requested window.
 
+## Parity fixtures
+
+Generate and validate WebGeocalc-style parity fixtures:
+
+```bash
+.venv/Scripts/python scripts/generate-parity-fixtures.py
+.venv/Scripts/python scripts/check-parity-fixtures.py
+```
+
+Fixtures are written to `fixtures/webgeocalc/` and include the selected kernels, midpoint UTC, expected geometry values, and comparison tolerances.
+
+## Catalog discovery
+
+Scan live NAIF directory indexes for catalog candidates:
+
+```bash
+node scripts/scrape-naif-index.js \
+  --scenario juno-jupiter \
+  --candidates \
+  --limit 20
+```
+
+The scraper reads NAIF directory listings, classifies kernel type and role from the path and file extension, and marks entries already present in the curated catalog.
+
 ## API
 
 ```js
@@ -106,6 +134,8 @@ console.log(report.spiceypyRecipe);
 SPICE geometry work often starts with a deceptively practical question: which kernels do I need for this observer, target, and time range? The answer depends on ephemerides, leapseconds, body constants, spacecraft trajectory kernels, and the coverage windows inside those files.
 
 `spice-doctor` makes that setup explicit. A generated report shows the selected kernels, coverage readiness, download sources, a meta-kernel, and a short Python recipe that can be checked against native SPICE or WebGeocalc.
+
+The bundled mission scenarios also include frame kernels, instrument kernels, spacecraft clock kernels, and representative CK attitude entries. Instrument FOV output is generated for JunoCam, HiRISE, and Cassini ISS examples.
 
 ## Sources for the v0 catalog
 

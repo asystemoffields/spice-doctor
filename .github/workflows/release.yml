@@ -1,0 +1,34 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Test
+        run: node --test tests/*.test.js
+
+      - name: Build static site
+        run: node scripts/build-site.js
+
+      - name: Package release artifacts
+        run: |
+          zip -r spice-doctor-site.zip site
+          git archive --format=tar.gz --output=spice-doctor-source.tgz HEAD
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME:-manual-${GITHUB_RUN_NUMBER}}"
+          gh release create "$tag" spice-doctor-site.zip spice-doctor-source.tgz --generate-notes

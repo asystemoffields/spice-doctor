@@ -1,10 +1,26 @@
 import { KERNEL_CATALOG } from './catalog.js';
 import { coverageGaps, formatCompact, overlap } from './time.js';
 
-export function selectKernelsForScenario(scenario, window) {
+const CALCULATION_ROLE_DEPENDENCIES = {
+  'instrument-fov': ['frame-definition', 'instrument-definition'],
+  'attitude-matrix': ['frame-definition', 'spacecraft-clock', 'attitude'],
+};
+
+export function rolesForCalculations(calculations = []) {
+  const roles = new Set();
+  for (const calculation of calculations) {
+    for (const role of CALCULATION_ROLE_DEPENDENCIES[calculation] ?? []) roles.add(role);
+  }
+  return roles;
+}
+
+export function selectKernelsForScenario(scenario, window, calculations = scenario.calculations) {
+  const optionalRolesNeeded = rolesForCalculations(calculations);
   const roles = [
     ...scenario.requiredRoles.map((role) => ({ role, required: true })),
-    ...scenario.optionalRoles.map((role) => ({ role, required: false })),
+    ...scenario.optionalRoles
+      .filter((role) => optionalRolesNeeded.has(role))
+      .map((role) => ({ role, required: true })),
   ];
 
   const selections = [];
@@ -57,9 +73,22 @@ export function selectKernelsForScenario(scenario, window) {
 
 function candidatesForRole(role, scenario) {
   const roleCandidates = KERNEL_CATALOG.filter((k) => k.role === role);
-  if (role !== 'spacecraft-trajectory') return roleCandidates;
+  if (role === 'instrument-definition') {
+    return roleCandidates.filter((k) => {
+      if (k.bodies?.length && !matchesObserver(k, scenario)) return false;
+      if (!scenario.instrument?.id) return true;
+      return k.instruments?.some((instrument) => instrument.toUpperCase() === scenario.instrument.id.toUpperCase());
+    });
+  }
+  if (['frame-definition', 'spacecraft-clock', 'spacecraft-trajectory', 'attitude'].includes(role)) {
+    return roleCandidates.filter((k) => matchesObserver(k, scenario));
+  }
+  return roleCandidates;
+}
+
+function matchesObserver(kernel, scenario) {
   const observer = scenario.observer.toUpperCase();
-  return roleCandidates.filter((k) => k.bodies?.some((body) => body.toUpperCase() === observer));
+  return kernel.bodies?.some((body) => body.toUpperCase() === observer);
 }
 
 function selectCoveringSet(candidates, window) {

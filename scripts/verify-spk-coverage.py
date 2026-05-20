@@ -60,14 +60,12 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"Unknown scenario: {opts.scenario}")
         wanted_roles = set(scenario["requiredRoles"]) | set(scenario["optionalRoles"])
         wanted_observer = scenario["observer"].upper()
+        wanted_instrument = scenario.get("instrument", {}).get("id", "").upper()
         kernels = [
             k
             for k in kernels
             if k["role"] in wanted_roles
-            and (
-                k["role"] != "spacecraft-trajectory"
-                or wanted_observer in [body.upper() for body in k.get("bodies", [])]
-            )
+            and matches_scenario_kernel(k, wanted_observer, wanted_instrument)
         ]
 
     opts.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -134,6 +132,21 @@ def audit_kernel(kernel: dict[str, Any], opts: AuditOptions, audit: dict[str, An
             }
         )
         audit["summary"]["errors"] += 1
+
+
+def matches_scenario_kernel(kernel: dict[str, Any], observer: str, instrument: str) -> bool:
+    if kernel.get("bodies") and kernel["role"] in {
+        "spacecraft-trajectory",
+        "frame-definition",
+        "spacecraft-clock",
+        "attitude",
+        "instrument-definition",
+    }:
+        if observer not in [body.upper() for body in kernel.get("bodies", [])]:
+            return False
+    if kernel["role"] == "instrument-definition" and instrument:
+        return instrument in [item.upper() for item in kernel.get("instruments", [])]
+    return True
 
 
 def parse_args(argv: list[str] | None) -> AuditOptions:

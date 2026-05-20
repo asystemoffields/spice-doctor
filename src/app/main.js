@@ -2,6 +2,16 @@ import { SCENARIOS } from '../core/catalog.js';
 import { generateDownloadList } from '../core/manifest.js';
 import { buildManifestReport } from '../core/report.js';
 
+const CALCULATION_LABELS = {
+  'state-vector': 'State vector',
+  'range-rate': 'Range rate',
+  'phase-angle': 'Phase angle',
+  'sub-observer-point': 'Sub-observer point',
+  'sub-solar-point': 'Sub-solar point',
+  'instrument-fov': 'Instrument FOV',
+  'attitude-matrix': 'Attitude frame',
+};
+
 const root = document.querySelector('#app');
 if (!root) throw new Error('Missing app root');
 
@@ -31,11 +41,7 @@ root.innerHTML = `
       </div>
       <fieldset>
         <legend>Geometry products</legend>
-        <label class="check"><input type="checkbox" value="state-vector" checked /> State vector</label>
-        <label class="check"><input type="checkbox" value="range-rate" checked /> Range rate</label>
-        <label class="check"><input type="checkbox" value="phase-angle" checked /> Phase angle</label>
-        <label class="check"><input type="checkbox" value="sub-observer-point" checked /> Sub-observer point</label>
-        <label class="check"><input type="checkbox" value="sub-solar-point" checked /> Sub-solar point</label>
+        <div id="calculations"></div>
       </fieldset>
       <button id="run" type="button">Resolve manifest</button>
     </aside>
@@ -83,11 +89,20 @@ root.innerHTML = `
         </div>
         <pre id="code"></pre>
       </section>
+      <section class="panel">
+        <h3>Browser Geometry</h3>
+        <div class="browser-runner">
+          <button id="pyodide-probe" type="button">Load Pyodide</button>
+          <span id="pyodide-status" class="runner-status">idle</span>
+        </div>
+        <pre id="pyodide-output" class="compact-pre"></pre>
+      </section>
     </section>
   </section>
 `;
 
 const scenarioSelect = byId('scenario');
+const calculationsEl = byId('calculations');
 const fromInput = byId('from');
 const toInput = byId('to');
 const runButton = byId('run');
@@ -100,6 +115,9 @@ const coverageEl = byId('coverage');
 const kernelsEl = byId('kernels');
 const diagnosticsEl = byId('diagnostics');
 const codeEl = byId('code');
+const pyodideProbe = byId('pyodide-probe');
+const pyodideStatus = byId('pyodide-status');
+const pyodideOutput = byId('pyodide-output');
 
 let currentReport;
 let activeTab = 'metakernel';
@@ -113,16 +131,15 @@ for (const scenario of SCENARIOS) {
 
 scenarioSelect.value = 'juno-jupiter';
 setInputsFromScenario();
+renderCalculationControls();
 render();
 
 scenarioSelect.addEventListener('change', () => {
   setInputsFromScenario();
+  renderCalculationControls();
   render();
 });
 runButton.addEventListener('click', render);
-for (const input of document.querySelectorAll('input[type="checkbox"]')) {
-  input.addEventListener('change', render);
-}
 
 for (const tab of document.querySelectorAll('.tab')) {
   tab.addEventListener('click', () => {
@@ -131,6 +148,27 @@ for (const tab of document.querySelectorAll('.tab')) {
     renderCode();
   });
 }
+
+pyodideProbe.addEventListener('click', async () => {
+  pyodideProbe.disabled = true;
+  pyodideStatus.textContent = 'loading';
+  pyodideOutput.textContent = '';
+  try {
+    const { probeSpiceyPy } = await import('./pyodide-runner.js');
+    const result = await probeSpiceyPy({
+      onStatus(status) {
+        pyodideStatus.textContent = status;
+      },
+    });
+    pyodideStatus.textContent = result.status;
+    pyodideOutput.textContent = JSON.stringify(result, null, 2);
+  } catch (error) {
+    pyodideStatus.textContent = 'error';
+    pyodideOutput.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    pyodideProbe.disabled = false;
+  }
+});
 
 function render() {
   const scenario = SCENARIOS.find((s) => s.id === scenarioSelect.value);
@@ -225,8 +263,29 @@ function setInputsFromScenario() {
   toInput.value = isoToLocal(scenario.sampleWindow.stop);
 }
 
+function renderCalculationControls() {
+  const scenario = SCENARIOS.find((s) => s.id === scenarioSelect.value);
+  const calculations = [...scenario.calculations];
+  if (scenario.attitudeFrame && !calculations.includes('attitude-matrix')) {
+    calculations.push('attitude-matrix');
+  }
+
+  calculationsEl.textContent = '';
+  for (const calculation of calculations) {
+    const label = document.createElement('label');
+    label.className = 'check';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = calculation;
+    input.checked = scenario.calculations.includes(calculation);
+    input.addEventListener('change', render);
+    label.append(input, document.createTextNode(CALCULATION_LABELS[calculation] ?? labelRole(calculation)));
+    calculationsEl.append(label);
+  }
+}
+
 function selectedCalculations() {
-  return [...document.querySelectorAll('input[type="checkbox"]:checked')]
+  return [...calculationsEl.querySelectorAll('input[type="checkbox"]:checked')]
     .map((input) => input.value);
 }
 

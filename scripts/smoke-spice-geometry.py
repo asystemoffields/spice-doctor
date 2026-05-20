@@ -162,6 +162,7 @@ def run_geometry(report: dict[str, Any]) -> dict[str, Any]:
     body_frame = "IAU_" + scenario["target"].replace(" ", "_")
     sub_observer = surface_point("sub_observer", spice.subpnt, scenario, et, body_frame)
     sub_solar = surface_point("sub_solar", spice.subslr, scenario, et, body_frame)
+    instrument_fov = instrument_field_of_view(scenario) if scenario.get("instrument") else None
 
     return {
         "utc": utc,
@@ -171,6 +172,7 @@ def run_geometry(report: dict[str, Any]) -> dict[str, Any]:
         "phaseAngleDeg": phase_deg,
         "subObserver": sub_observer,
         "subSolar": sub_solar,
+        "instrumentFov": instrument_fov,
     }
 
 
@@ -195,6 +197,29 @@ def surface_point(name: str, fn: Any, scenario: dict[str, Any], et: float, body_
     for key, value in values.items():
         if not math.isfinite(value):
             raise RuntimeError(f"Invalid {name}.{key}: {value}")
+    return values
+
+
+def instrument_field_of_view(scenario: dict[str, Any]) -> dict[str, Any]:
+    instrument_id = scenario["instrument"]["id"]
+    code = spice.bodn2c(instrument_id)
+    shape, frame, boresight, vector_count, bounds = spice.getfov(code, 32)
+    vectors = [vector_to_list(bounds[i]) for i in range(vector_count)]
+    return {
+        "instrument": instrument_id,
+        "instrumentCode": int(code),
+        "shape": shape,
+        "frame": frame,
+        "boresight": vector_to_list(boresight),
+        "boundaryVectors": vectors,
+    }
+
+
+def vector_to_list(vector: Any) -> list[float]:
+    values = [float(x) for x in vector]
+    for value in values:
+        if not math.isfinite(value):
+            raise RuntimeError(f"Invalid vector component: {value}")
     return values
 
 

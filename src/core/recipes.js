@@ -62,6 +62,28 @@ export function generateSpiceyPyRecipe(scenario, window, calculations, kernels) 
     );
   }
 
+  if (calcSet.has('instrument-fov') && scenario.instrument) {
+    lines.push(
+      `instrument = "${scenario.instrument.id}"`,
+      'instrument_id = spice.bodn2c(instrument)',
+      'shape, fov_frame, boresight, vector_count, boundary_vectors = spice.getfov(instrument_id, 32)',
+      'print("instrument_fov", instrument, shape, fov_frame)',
+      'print("instrument_boresight", boresight)',
+      'for i, vector in enumerate(boundary_vectors[:vector_count]):',
+      '    print("instrument_fov_boundary", i, vector)',
+      '',
+    );
+  }
+
+  if (calcSet.has('attitude-matrix') && scenario.attitudeFrame) {
+    lines.push(
+      `attitude_frame = "${scenario.attitudeFrame}"`,
+      'attitude_to_j2000 = spice.pxform(attitude_frame, "J2000", et)',
+      'print("attitude_to_j2000", attitude_to_j2000)',
+      '',
+    );
+  }
+
   lines.push(
     '# Kernels used in the generated meta-kernel:',
     ...kernels.map((kernel) => `# - ${kernel.localPath}`),

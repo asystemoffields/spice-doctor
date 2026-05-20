@@ -33,6 +33,7 @@
     "src",
     "scripts",
     "docs",
+    "fixtures",
     "README.md",
     "LICENSE",
     "requirements-spice.txt"
@@ -43,6 +44,9 @@
     "test": "node --test tests/*.test.js",
     "cli": "node src/cli.js",
     "export:catalog": "node scripts/export-catalog.js",
+    "scrape:naif": "node scripts/scrape-naif-index.js",
+    "fixtures:parity": "python scripts/generate-parity-fixtures.py",
+    "check:parity": "python scripts/check-parity-fixtures.py",
     "audit:spk": "python scripts/verify-spk-coverage.py",
     "smoke:spice": "python scripts/smoke-spice-geometry.py"
   },

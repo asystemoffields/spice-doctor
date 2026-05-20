@@ -12,7 +12,7 @@ export function buildManifestReport(request) {
 
   const window = validateWindow(request.window);
   const calculations = request.calculations?.length ? request.calculations : scenario.calculations;
-  const { selections, kernels, issues } = selectKernelsForScenario(scenario, window);
+  const { selections, kernels, issues } = selectKernelsForScenario(scenario, window, calculations);
   const status = issues.some((i) => i.severity === 'error')
     ? 'blocked'
     : issues.some((i) => i.severity === 'warning')
