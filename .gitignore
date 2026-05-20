@@ -1,0 +1,9 @@
+node_modules/
+.venv/
+.spice-kernels/
+site/
+artifacts/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.log
