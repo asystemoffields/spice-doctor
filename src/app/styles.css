@@ -243,6 +243,22 @@ h2 {
   font-size: 15px;
 }
 
+.file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.file-actions button,
+.suggestion-row button {
+  background: #315f82;
+}
+
+.file-actions button:hover,
+.suggestion-row button:hover {
+  background: #294f6e;
+}
+
 .split {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
@@ -276,17 +292,38 @@ h2 {
   font-size: 12px;
 }
 
-.bar {
+.bar,
+.timeline-track {
   height: 10px;
   background: #e6ebef;
   border-radius: 999px;
   overflow: hidden;
 }
 
+.timeline-track {
+  position: relative;
+}
+
 .bar span {
   display: block;
   height: 100%;
   background: #3a977b;
+}
+
+.coverage-segment,
+.gap-segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 3px;
+}
+
+.coverage-segment {
+  background: #3a977b;
+}
+
+.gap-segment {
+  background: #c6505b;
 }
 
 .coverage-row.warn .bar span {
@@ -314,6 +351,59 @@ h2 {
 
 .kernel-row:first-child {
   border-top: 0;
+}
+
+.checklist-row,
+.missing-row,
+.suggestion-row {
+  display: grid;
+  gap: 7px;
+  padding: 10px 0;
+  color: inherit;
+  text-decoration: none;
+  border-top: 1px solid #e5ebf0;
+}
+
+.checklist-row {
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.checklist-row:first-child,
+.missing-row:first-child,
+.suggestion-row:first-child {
+  border-top: 0;
+}
+
+.checklist-row strong,
+.checklist-row small,
+.missing-row p,
+.suggestion-row p {
+  overflow-wrap: anywhere;
+}
+
+.missing-row strong {
+  color: #a93642;
+  font-size: 12px;
+}
+
+.missing-row.warning strong {
+  color: #8c5d18;
+}
+
+.suggestion-row strong {
+  color: #243241;
+}
+
+.suggestion-row p {
+  color: #40505f;
+  font-size: 13px;
+}
+
+.suggestion-row button {
+  justify-self: start;
+  padding: 7px 10px;
+  font-size: 13px;
 }
 
 .kernel-type {

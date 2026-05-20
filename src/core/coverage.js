@@ -45,6 +45,7 @@ export function selectKernelsForScenario(scenario, window, calculations = scenar
         code: required ? 'MISSING_REQUIRED_ROLE' : 'OPTIONAL_ROLE_EMPTY',
         message,
         fix: required ? fixForRole(role, directories) : undefined,
+        directories,
         role,
       });
     } else if (covered) {
@@ -59,6 +60,8 @@ export function selectKernelsForScenario(scenario, window, calculations = scenar
         code: required ? 'COVERAGE_GAP' : 'OPTIONAL_COVERAGE_GAP',
         message,
         fix: fixForCoverageGap(role, window, directories),
+        directories,
+        gaps,
         role,
       });
     }
@@ -91,7 +94,11 @@ function bodyCoverageIssues(scenario, kernels) {
       severity: 'error',
       code: 'BODY_NOT_IN_SELECTED_KERNELS',
       message: `${body} is not listed in the selected catalog kernels.`,
-      fix: `Choose a cataloged body name or add kernels whose body list includes ${body}.`,
+      fix: `Choose a cataloged body name or add an SPK catalog entry whose body list includes ${body}.`,
+      directories: [
+        'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/asteroids/',
+        'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/',
+      ],
       role: 'body-coverage',
     }));
 }
@@ -122,7 +129,7 @@ function matchesSpacecraft(kernel, scenario) {
 
 function fixForRole(role, directories) {
   if (directories.length === 0) {
-    return `Add a ${role} kernel entry to the catalog or provide one in a custom manifest.`;
+    return `Add ${articleFor(role)} ${role} kernel entry to the catalog or provide one in a custom manifest.`;
   }
   return `Look for a ${role} kernel in ${directories.join(', ')}.`;
 }
@@ -161,4 +168,8 @@ function compareKernelOrder(a, b) {
     ['DSK', 7],
   ]);
   return (typeRank.get(a.type) ?? 99) - (typeRank.get(b.type) ?? 99) || a.localPath.localeCompare(b.localPath);
+}
+
+function articleFor(value) {
+  return /^[aeiou]/i.test(value) ? 'an' : 'a';
 }

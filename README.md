@@ -2,7 +2,7 @@
 
 SPICE kernel manifest, coverage, and reproducibility workbench for planetary geometry workflows.
 
-`spice-doctor` starts from a geometry question: observer, target, center, UTC range, and products to compute. It selects NAIF kernels from a curated catalog, checks coverage, emits a meta-kernel, and generates a runnable SpiceyPy recipe for common geometry products.
+`spice-doctor` starts from a geometry question: observer, target, center, UTC range, and products to compute. It selects NAIF kernels from a curated catalog, checks coverage, and produces a handoff bundle with a meta-kernel, direct kernel URLs, a runnable SpiceyPy script, a coverage timeline, and next-step suggestions.
 
 ![SPICE Doctor workbench](docs/spice-doctor-handoff.png)
 
@@ -11,6 +11,8 @@ SPICE kernel manifest, coverage, and reproducibility workbench for planetary geo
 - Zero-dependency JavaScript core library for scenario reports.
 - CLI for manifest resolution and reproducible recipe generation.
 - Question-first web app for coverage inspection and handoff reports.
+- Downloadable handoff files: meta-kernel, SpiceyPy runner, kernel URL checklist, download list, README, and JSON report.
+- Coverage timeline and blocked-question suggestions for nearby valid windows or catalog directories.
 - Curated scenarios for Earth-Moon-Sun, Juno-Jupiter, MRO-Mars, and Cassini-Enceladus 2012.
 - Real SPK coverage audit workflow through SpiceyPy.
 - Live geometry smoke test for state vectors, range rate, phase angle, sub-points, and instrument FOVs.
@@ -40,6 +42,7 @@ const report = buildQuestionReport({
 
 console.log(report.answer);
 console.log(report.kernels.map((kernel) => kernel.localPath));
+console.log(report.handoff.files.map((file) => file.name));
 ```
 
 Run a bundled scenario from the CLI:
@@ -49,6 +52,15 @@ node src/cli.js --scenario juno-jupiter \
   --from 2026-03-10T00:00:00Z \
   --to 2026-03-11T00:00:00Z \
   --downloads --meta-kernel --recipe
+```
+
+Write a runnable handoff directory:
+
+```bash
+node src/cli.js --scenario juno-jupiter \
+  --from 2026-03-10T00:00:00Z \
+  --to 2026-03-11T00:00:00Z \
+  --handoff-dir artifacts/handoff-juno
 ```
 
 Launch the local workbench:

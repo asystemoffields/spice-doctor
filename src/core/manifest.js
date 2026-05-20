@@ -35,6 +35,13 @@ export function toJsonReport(report) {
       issues: report.issues,
       kernels: report.kernels,
       selections: report.selections,
+      handoff: report.handoff
+        ? {
+            checklist: report.handoff.checklist,
+            timeline: report.handoff.timeline,
+            suggestions: report.handoff.suggestions,
+          }
+        : undefined,
     },
     null,
     2,

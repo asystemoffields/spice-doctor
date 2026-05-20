@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { SCENARIOS } from './core/catalog.js';
 import { generateDownloadList, toJsonReport } from './core/manifest.js';
 import { buildManifestReport } from './core/report.js';
@@ -30,6 +32,7 @@ function main() {
   }
 
   console.log(`${report.scenario.name}: ${report.status}`);
+  console.log(report.answer);
   for (const issue of report.issues) {
     console.log(`${issue.severity.toUpperCase()} ${issue.code}: ${issue.message}`);
     if (issue.fix) console.log(`  fix: ${issue.fix}`);
@@ -52,6 +55,10 @@ function main() {
     console.log('\nSpiceyPy recipe');
     console.log(report.spiceypyRecipe);
   }
+  if (args.handoffDir) {
+    writeHandoffFiles(report, args.handoffDir);
+    console.log(`\nWrote handoff files to ${args.handoffDir}`);
+  }
 }
 
 function parseArgs(argv) {
@@ -65,6 +72,7 @@ function parseArgs(argv) {
     else if (arg === '--meta-kernel') out.metaKernel = true;
     else if (arg === '--recipe') out.recipe = true;
     else if (arg === '--downloads') out.downloads = true;
+    else if (arg === '--handoff-dir') out.handoffDir = argv[++i];
     else if (arg === '--calculations') {
       out.calculations = (argv[++i] ?? '').split(',').filter(Boolean);
     } else if (!arg.startsWith('-') && !out.scenario) {
@@ -74,11 +82,19 @@ function parseArgs(argv) {
   return out;
 }
 
+function writeHandoffFiles(report, dir) {
+  mkdirSync(dir, { recursive: true });
+  for (const file of report.handoff.files) {
+    writeFileSync(join(dir, file.name), file.contents);
+  }
+}
+
 function printHelp() {
   console.log(`spice-doctor
 
 Usage:
   spice-doctor --scenario juno-jupiter --from 2026-03-10T00:00:00Z --to 2026-03-11T00:00:00Z --downloads --meta-kernel --recipe
+  spice-doctor --scenario juno-jupiter --handoff-dir handoff/juno-jupiter
   spice-doctor cassini-enceladus-2012 --json
 
 Scenarios:

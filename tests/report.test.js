@@ -49,6 +49,10 @@ test('answers a custom Juno geometry question', () => {
   assert.match(report.answer, /^Ready:/);
   assert.ok(report.kernels.map((k) => k.id).includes('juno-spk-rec-orbit'));
   assert.ok(report.kernels.map((k) => k.id).includes('juno-ik-junocam-v03'));
+  assert.ok(report.handoff.files.some((file) => file.name === 'scenario.tm'));
+  assert.ok(report.handoff.files.some((file) => file.name === 'run_geometry.py'));
+  assert.equal(report.handoff.checklist.selected.some((item) => item.url.includes('/JUNO/kernels/spk/')), true);
+  assert.equal(report.handoff.timeline.rows.some((row) => row.role === 'spacecraft-trajectory' && row.covered), true);
 });
 
 test('answers a generic Earth Moon question without spacecraft kernels', () => {
@@ -107,6 +111,7 @@ test('blocks MRO requests after the current merged orbit coverage', () => {
 
   assert.equal(report.status, 'blocked');
   assert.equal(report.issues.some((i) => i.role === 'spacecraft-trajectory' && i.code === 'COVERAGE_GAP'), true);
+  assert.equal(report.handoff.suggestions.some((s) => s.action === 'use-window' && s.window.stop.startsWith('2026-06-15')), true);
 });
 
 test('resolves the archival Cassini Enceladus sample window', () => {

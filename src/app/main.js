@@ -90,8 +90,22 @@ root.innerHTML = `
         <p id="answer"></p>
       </section>
       <section class="panel">
-        <h3>Coverage</h3>
+        <h3>Handoff files</h3>
+        <div id="handoff-files" class="file-actions"></div>
+      </section>
+      <section class="panel">
+        <h3>Coverage timeline</h3>
         <div id="coverage"></div>
+      </section>
+      <section class="split">
+        <article class="panel">
+          <h3>Kernel URL checklist</h3>
+          <div id="checklist"></div>
+        </article>
+        <article class="panel">
+          <h3>Suggestions</h3>
+          <div id="suggestions"></div>
+        </article>
       </section>
       <section class="split">
         <article class="panel">
@@ -138,7 +152,10 @@ const kernelCount = byId('kernel-count');
 const issueCount = byId('issue-count');
 const downloadSize = byId('download-size');
 const answerEl = byId('answer');
+const handoffFilesEl = byId('handoff-files');
 const coverageEl = byId('coverage');
+const checklistEl = byId('checklist');
+const suggestionsEl = byId('suggestions');
 const kernelsEl = byId('kernels');
 const diagnosticsEl = byId('diagnostics');
 const codeEl = byId('code');
@@ -172,12 +189,21 @@ presetSelect.addEventListener('change', () => {
   render();
 });
 runButton.addEventListener('click', render);
-for (const input of [observerInput, targetInput, centerInput, instrumentInput, fromInput, toInput]) {
+for (const input of [observerInput, targetInput, centerInput, instrumentInput]) {
+  input.addEventListener('input', () => {
+    if (presetSelect.value !== 'custom') {
+      presetSelect.value = 'custom';
+      renderCalculationControls();
+    }
+  });
   input.addEventListener('change', () => {
-    if (input !== fromInput && input !== toInput) presetSelect.value = 'custom';
+    presetSelect.value = 'custom';
     renderCalculationControls();
     render();
   });
+}
+for (const input of [fromInput, toInput]) {
+  input.addEventListener('change', render);
 }
 
 for (const tab of document.querySelectorAll('.tab')) {
@@ -234,28 +260,124 @@ function render() {
   downloadSize.textContent = mb > 0 ? `${Math.round(mb)} MB` : 'cataloged';
   answerEl.textContent = currentReport.answer;
 
-  renderCoverage(currentReport.selections);
+  renderHandoffFiles();
+  renderCoverage(currentReport.handoff.timeline);
+  renderChecklist();
+  renderSuggestions();
   renderKernels();
   renderDiagnostics();
   renderCode();
 }
 
-function renderCoverage(selections) {
+function renderHandoffFiles() {
+  handoffFilesEl.textContent = '';
+  for (const file of currentReport.handoff.files) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = file.label;
+    button.addEventListener('click', () => downloadFile(file));
+    handoffFilesEl.appendChild(button);
+  }
+}
+
+function renderCoverage(timeline) {
   coverageEl.textContent = '';
-  for (const selection of selections) {
+  for (const rowData of timeline.rows) {
     const row = document.createElement('div');
-    row.className = `coverage-row ${selection.covered ? 'ok' : selection.required ? 'bad' : 'warn'}`;
-    row.innerHTML = `
-      <div class="coverage-head">
-        <strong>${labelRole(selection.role)}</strong>
-        <span>${selection.required ? 'required' : 'optional'}</span>
-      </div>
-      <div class="bar">
-        <span style="width:${selection.covered ? '100' : '42'}%"></span>
-      </div>
-      <p>${selection.message}</p>
-    `;
+    row.className = `coverage-row ${rowData.covered ? 'ok' : rowData.required ? 'bad' : 'warn'}`;
+
+    const head = document.createElement('div');
+    head.className = 'coverage-head';
+    const title = document.createElement('strong');
+    title.textContent = labelRole(rowData.role);
+    const kind = document.createElement('span');
+    kind.textContent = rowData.required ? 'required' : 'optional';
+    head.append(title, kind);
+
+    const track = document.createElement('div');
+    track.className = 'timeline-track';
+    for (const gap of rowData.gaps) {
+      const segment = document.createElement('span');
+      segment.className = 'gap-segment';
+      segment.style.left = `${gap.position.left}%`;
+      segment.style.width = `${gap.position.width}%`;
+      segment.title = `Gap: ${gap.start} to ${gap.stop}`;
+      track.appendChild(segment);
+    }
+    for (const span of rowData.spans) {
+      if (!span.position) continue;
+      const segment = document.createElement('span');
+      segment.className = 'coverage-segment';
+      segment.style.left = `${span.position.left}%`;
+      segment.style.width = `${span.position.width}%`;
+      segment.title = `${span.label}: ${span.clipped.start} to ${span.clipped.stop}`;
+      track.appendChild(segment);
+    }
+
+    const message = document.createElement('p');
+    message.textContent = rowData.message;
+    row.append(head, track, message);
     coverageEl.appendChild(row);
+  }
+}
+
+function renderChecklist() {
+  checklistEl.textContent = '';
+  for (const item of currentReport.handoff.checklist.selected) {
+    const row = document.createElement('a');
+    row.className = 'checklist-row';
+    row.href = item.url;
+    row.target = '_blank';
+    row.rel = 'noreferrer';
+    row.innerHTML = `
+      <span class="kernel-type">${item.type}</span>
+      <span>
+        <strong></strong>
+        <small></small>
+      </span>
+    `;
+    row.querySelector('strong').textContent = `${labelRole(item.role)}: ${item.localPath}`;
+    row.querySelector('small').textContent = item.coverage
+      ? `${item.coverage.start} to ${item.coverage.stop}`
+      : item.url;
+    checklistEl.appendChild(row);
+  }
+
+  for (const item of currentReport.handoff.checklist.missing) {
+    const row = document.createElement('div');
+    row.className = `missing-row ${item.severity}`;
+    const title = document.createElement('strong');
+    title.textContent = `${item.code} (${labelRole(item.role)})`;
+    const message = document.createElement('p');
+    const directories = item.directories?.length ? ` Candidate directories: ${item.directories.join(', ')}.` : '';
+    message.textContent = item.fix ? `${item.message} ${item.fix}${directories}` : item.message;
+    row.append(title, message);
+    checklistEl.appendChild(row);
+  }
+}
+
+function renderSuggestions() {
+  suggestionsEl.textContent = '';
+  for (const suggestion of currentReport.handoff.suggestions) {
+    const row = document.createElement('div');
+    row.className = 'suggestion-row';
+    const title = document.createElement('strong');
+    title.textContent = suggestion.title;
+    const detail = document.createElement('p');
+    detail.textContent = suggestion.detail;
+    row.append(title, detail);
+    if (suggestion.action === 'use-window' && suggestion.window) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Use window';
+      button.addEventListener('click', () => {
+        fromInput.value = suggestion.window.start;
+        toInput.value = suggestion.window.stop;
+        render();
+      });
+      row.appendChild(button);
+    }
+    suggestionsEl.appendChild(row);
   }
 }
 
@@ -300,6 +422,18 @@ function renderCode() {
   if (activeTab === 'recipe') codeEl.textContent = currentReport.spiceypyRecipe;
   else if (activeTab === 'downloads') codeEl.textContent = generateDownloadList(currentReport.kernels);
   else codeEl.textContent = currentReport.metaKernel;
+}
+
+function downloadFile(file) {
+  const blob = new Blob([file.contents], { type: file.type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = file.name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function setInputsFromPreset() {

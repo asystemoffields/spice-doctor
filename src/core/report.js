@@ -1,5 +1,6 @@
 import { getScenario } from './catalog.js';
 import { selectKernelsForScenario } from './coverage.js';
+import { buildHandoffBundle } from './handoff.js';
 import { generateMetaKernel } from './manifest.js';
 import { createScenarioFromQuestion } from './questions.js';
 import { generateSpiceyPyRecipe } from './recipes.js';
@@ -40,7 +41,7 @@ function buildReportPayload(scenario, request, window, calculations, selections,
       ? 'partial'
       : 'ready';
 
-  return {
+  const report = {
     scenario,
     request,
     status,
@@ -51,6 +52,8 @@ function buildReportPayload(scenario, request, window, calculations, selections,
     spiceypyRecipe: generateSpiceyPyRecipe(scenario, window, calculations, kernels),
     answer: answerFor(status, selections, issues),
   };
+  report.handoff = buildHandoffBundle(report);
+  return report;
 }
 
 function answerFor(status, selections, issues) {
